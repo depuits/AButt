@@ -1,133 +1,159 @@
 #include "Arduino.h"
 #include "AButt.h"
 
-AButt::AButt(int pin, int debounce = 50, bool inverted = false, bool intPullup = true, bool isDigital = true):
+AButt::AButt(int pin, unsigned int debounce, bool inverted, bool intPullup, bool isDigital):
 	_pin(pin),
-	_debounce(debounce),
 	_inverted(inverted),
 	_isDigital(isDigital),
 
 	_isPressed(false),
-	_isHold(false),
+	_isHeld(false),
 	_wasPressed(false),
-	_wasHeld(false),
+
 	_lastState(false),
-	_lastHoldState(false),
-	_startLastPress(0),
-	_startLastPressInc(0),
-	_startLastRelease(0),
-	_clickDelay(200),
+	_lastDebounceTime(0),
+	_lastPressTime(0),
+	_lastClickTime(0),
+
+	_debounceDelay(debounce),
+	_clickDelay(300),
 	_holdDelay(500),
+
+	_maxClicks(5),
 
 	_clickCallback(nullptr),
 	_holdStartCallback(nullptr),
 	_holdEndCallback(nullptr)
 {
-	if(intPullup) {
+	if (intPullup) {
 		pinMode(_pin, INPUT_PULLUP);
 	} else {
 		pinMode(_pin, INPUT);
 	}
 }
 
-void AButt::setPosFlank(void (*callback)()) {
-	_posFlankCallback = callback;
+void AButt::update() {
+	//Check the real button state
+	bool state = getState();
+	
+	//Manage _isPressed var
+	if (state != _lastState) {
+		// reset the debouncing timer
+		_lastDebounceTime = millis();
+	}
+
+	if ((millis() - _lastDebounceTime) > _debounceDelay) {
+		// whatever the reading is at, it's been there for longer than the debounce
+		// delay, so take it as the actual current state:
+		_isPressed = state;
+	}
+
+	// do the callback and actual logics
+	if (_isPressed) {
+		if (!_wasPressed) {
+			_lastPressTime = millis();
+		} else if (millis() - _lastPressTime >= _holdDelay) {
+			startHold();			
+		}
+	} else {
+		if (_isHeld) {
+			endHold();
+		} else if (_wasPressed) {
+			++clickCount;
+			//start was pressed timer
+			_lastClickTime = millis();
+
+			if (clickCount >= _maxClicks) {
+				finishClick();
+			}
+		}
+	}
+
+	//if not pressed and released again within the time send the callback and number of clicks
+	if (millis() - _lastClickTime >= _clickDelay) {
+		finishClick();
+	}
+
+	// remember last states
+	_lastState = state;
+	_wasPressed = _isPressed;
 }
 
-void AButt::setNegFlank(void (*callback)()) {
-	_negFlankCallback = callback;
+void AButt::onClick(void(*callback)(unsigned short)) {
+	_clickCallback = callback;
 }
 
-void AButt::setHold(unsigned long time, void (*callback)()){
-	_holdTime = time;
-	_holdCallback = callback;
+void AButt::onHold(void(*start)(), void(*end)()){
+	_holdStartCallback = start;
+	_holdEndCallback = end;
+}
+
+bool AButt::isPressed() {
+	return _isPressed;
+}
+bool AButt::isHeld() {
+	return _isHeld;
 }
 
 bool AButt::getState() {
-	return _isPressed;
-}
-
-bool AButt::getDirectState() {
 	bool state;
-	if(_isDigital) {
+	if (_isDigital) {
 		state = digitalRead(_pin);
 	} else {
 		state = analogRead(_pin) > 512;
 	}
 
-	if(_inverted) {
+	if (_inverted) {
 		state = !state;
 	}
 	
 	return state;
 }
 
-void AButt::update() {
-	//Check the real button state
-	bool state = getDirectState();
-	
-	//Manage _isPressed var
-	if(state) {
-		if(!_lastState) {//potential new btn press
-			_startLastPress = millis();
-		} else {
-			if(millis()-_startLastPress >= _debounce) {
-				_isPressed = true; //keeps setting the _isPressed to true as long as the button is pressed for longer then de-bounce 
-			}
-		}
-	}
-	
-	if(!state) {
-		if(_lastState) {//potential new btn release
-			_startLastRelease = millis();
-		} else {
-			if(millis()-_startLastRelease >= _debounce) {
-				_isPressed = false;
-			}
-		}
-	}
-	_lastState = state;
-	
-	//Check for pos flank
-	if(_isPressed && !_wasPressed) {
-		if(_posFlankCallback) { //if no function is assigned yet, do nothing
-			(*_posFlankCallback)();
-		}
-		_wasPressed = _isPressed;
-	}
+void AButt::setClickDelay(unsigned int delay) {
+	_clickDelay = delay;
+}
+int AButt::getClickDelay() {
+	return _clickDelay;
+}
 
-	
-	//Check for neg flank
-	if(!_isPressed && _wasPressed) {
-		if(_negFlankCallback) { //if no function is assigned yet, do nothing
-			(*_negFlankCallback)();
+void AButt::setHoldDelay(unsigned int delay) {
+	_holdDelay = delay;
+}
+int AButt::getHoldDelay() {
+	return _holdDelay;
+}
+
+void AButt::setMaxClicks(unsigned short clicks) {
+	_maxClicks = clicks;
+}
+short AButt::getMaxClicks() {
+	return _maxClicks;
+}
+
+void AButt::finishClick() {
+	// only do something when there where actual clicks
+	if (clickCount > 0) {
+		if (_clickCallback) {
+			(*_clickCallback)(clickCount);
 		}
-		_wasPressed = _isPressed;
+
+		clickCount = 0;
 	}
-	
-	//Check for hold (including the de-bounce)
-	if(_isPressed) {
-		if(!_lastHoldState) {//potential new hold
-			_startLastPressInc = millis();
-		} else {
-			if(millis()-_startLastPressInc >= _holdTime) {
-				_isHold = true; //keeps setting the _isPressed to true as long as the button is pressed for longer then de-bounce 
-			}
-		}
-	} else {
-		_isHold = false;
+}
+
+void AButt::startHold() {
+	// just in case there was a click before the hold finish up the clicks
+	finishClick();
+
+	_isHeld = true;
+	if (_holdStartCallback) {
+		(*_holdStartCallback)();
 	}
-	_lastHoldState = _isPressed;
-	
-	//Check for pos hold flank
-	if(_isHold && !_wasHeld) {
-		if(_holdCallback) { //if no function is assigned yet, do nothing
-			(*_holdCallback)();
-		}
-		_wasHeld = _isHold;
-	}
-	//Check for neg hold flank (response not yet implemented)
-	if(!_isHold && _wasHeld) {
-		_wasHeld = _isHold;
+}
+void AButt::endHold() {
+	_isHeld = false;
+	if (_holdEndCallback) {
+		(*_holdEndCallback)();
 	}
 }
