@@ -16,8 +16,8 @@ AButt::AButt(int pin, unsigned int debounce, bool inverted, bool intPullup, bool
 	_lastClickTime(0),
 
 	_debounceDelay(debounce),
-	_clickDelay(300),
-	_holdDelay(500),
+	_clickDelay(500),
+	_holdDelay(700),
 
 	_maxClicks(5),
 
@@ -52,7 +52,7 @@ void AButt::update() {
 	if (_isPressed) {
 		if (!_wasPressed) {
 			_lastPressTime = millis();
-		} else if (millis() - _lastPressTime >= _holdDelay) {
+		} else if (!_isHeld && millis() - _lastPressTime >= _holdDelay) {
 			startHold();			
 		}
 	} else {

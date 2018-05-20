@@ -6,6 +6,7 @@ AButt btn(12); //(normal digital btn with internal pull-up: connect btn to pin a
 void setup() {
 	//link response functions to possible btn actions
 	btn.onClick(clicked);
+	btn.onHold(holdStart, holdEnd);
 	Serial.begin(115200);
 }
 
@@ -22,4 +23,11 @@ void clicked(unsigned short clicks) {
 	Serial.print("button clicked ");
 	Serial.print(clicks);
 	Serial.println(" times.");
+}
+
+void holdStart() {
+	Serial.println("start holding");
+}
+void holdEnd() {
+	Serial.println("holding ended");
 }
