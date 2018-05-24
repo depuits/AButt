@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include "AButt.h"
 
-AButt::AButt(int pin, unsigned int debounce, bool inverted, bool isDigital):
+AButt::AButt(int pin, bool inverted, bool isDigital, unsigned int debounce):
 	_pin(pin),
 	_inverted(inverted),
 	_isDigital(isDigital),
