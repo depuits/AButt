@@ -1,9 +1,13 @@
 #include <AButt.h>
 
+const int BUTTON_PIN = 12;
 //create AButt object
-AButt btn(12); //(normal digital btn with internal pull-up: connect btn to pin and ground)
+AButt btn(BUTTON_PIN); //normal digital btn 
 
 void setup() {
+	// set button pin to input with internal pull-up: connect btn to pin and ground)
+	pinMode(BUTTON_PIN, INPUT_PULLUP);
+
 	//link response functions to possible btn actions
 	btn.onClick(clicked);
 	btn.onHold(holdStart, holdEnd);

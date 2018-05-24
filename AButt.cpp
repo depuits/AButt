@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include "AButt.h"
 
-AButt::AButt(int pin, unsigned int debounce, bool inverted, bool intPullup, bool isDigital):
+AButt::AButt(int pin, unsigned int debounce, bool inverted, bool isDigital):
 	_pin(pin),
 	_inverted(inverted),
 	_isDigital(isDigital),
@@ -25,11 +25,6 @@ AButt::AButt(int pin, unsigned int debounce, bool inverted, bool intPullup, bool
 	_holdStartCallback(nullptr),
 	_holdEndCallback(nullptr)
 {
-	if (intPullup) {
-		pinMode(_pin, INPUT_PULLUP);
-	} else {
-		pinMode(_pin, INPUT);
-	}
 }
 
 void AButt::update() {

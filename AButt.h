@@ -4,7 +4,7 @@
 class AButt
 {
 public:
-	AButt(int pin, unsigned int debounce = 50, bool inverted = false, bool intPullup = false, bool isDigital = true);
+	AButt(int pin, unsigned int debounce = 50, bool inverted = false, bool isDigital = true);
 
 	void update();
 
