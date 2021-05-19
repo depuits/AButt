@@ -74,11 +74,11 @@ void AButt::update() {
 	_wasPressed = _isPressed;
 }
 
-void AButt::onClick(void(*callback)(unsigned short)) {
+void AButt::onClick(void(*callback)(AButt*, unsigned short)) {
 	_clickCallback = callback;
 }
 
-void AButt::onHold(void(*start)(), void(*end)()){
+void AButt::onHold(void(*start)(AButt*), void(*end)(AButt*)){
 	_holdStartCallback = start;
 	_holdEndCallback = end;
 }
@@ -126,11 +126,18 @@ short AButt::getMaxClicks() {
 	return _maxClicks;
 }
 
+void AButt::setData(void* data) {
+	_data = data;
+}
+void* AButt::getData() {
+	return _data;
+}
+
 void AButt::finishClick() {
 	// only do something when there where actual clicks
 	if (clickCount > 0) {
 		if (_clickCallback) {
-			(*_clickCallback)(clickCount);
+			(*_clickCallback)(this, clickCount);
 		}
 
 		clickCount = 0;
@@ -143,12 +150,12 @@ void AButt::startHold() {
 
 	_isHeld = true;
 	if (_holdStartCallback) {
-		(*_holdStartCallback)();
+		(*_holdStartCallback)(this);
 	}
 }
 void AButt::endHold() {
 	_isHeld = false;
 	if (_holdEndCallback) {
-		(*_holdEndCallback)();
+		(*_holdEndCallback)(this);
 	}
 }

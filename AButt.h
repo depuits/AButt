@@ -8,8 +8,8 @@ public:
 
 	void update();
 
-	void onClick(void(*callback)(unsigned short));
-	void onHold(void(*start)(), void(*end)());
+	void onClick(void(*callback)(AButt*, unsigned short));
+	void onHold(void(*start)(AButt*), void(*end)(AButt*));
 
 	//return state including de-bounce
 	bool isPressed();
@@ -29,6 +29,9 @@ public:
 	// maximum number of clicks in a sequence
 	void setMaxClicks(unsigned short clicks);
 	short getMaxClicks();
+
+	void setData(void* data);
+	void* getData();
 
 private:
 	int _pin; //pin conected to the button
@@ -52,14 +55,15 @@ private:
 
 	unsigned short _maxClicks; //maximum number of clicks in a sequence
 
-	void(*_clickCallback)(unsigned short);
-	void(*_holdStartCallback)();
-	void(*_holdEndCallback)();
+	void* _data; // pointer used to link random data
+
+	void(*_clickCallback)(AButt*, unsigned short);
+	void(*_holdStartCallback)(AButt*);
+	void(*_holdEndCallback)(AButt*);
 
 	void finishClick();
 
 	void startHold();
 	void endHold();
 };
-
 #endif	

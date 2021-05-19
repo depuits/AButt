@@ -23,15 +23,15 @@ void loop() {
 	}
 }
 
-void clicked(unsigned short clicks) {
+void clicked(AButt* sender, unsigned short clicks) {
 	Serial.print("button clicked ");
 	Serial.print(clicks);
 	Serial.println(" times.");
 }
 
-void holdStart() {
+void holdStart(AButt* sender) {
 	Serial.println("start holding");
 }
-void holdEnd() {
+void holdEnd(AButt* sender) {
 	Serial.println("holding ended");
 }
